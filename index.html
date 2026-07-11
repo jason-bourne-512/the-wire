@@ -144,11 +144,23 @@
     font-family:'Bebas Neue'; font-size:16px; letter-spacing:0.05em; box-shadow:0 8px 24px rgba(255,138,61,0.35);
     cursor:pointer; max-width:520px; width:calc(100% - 40px);
   }
-  #composer-modal, #identify-modal{
+  #composer-modal, #identify-modal, #reply-modal{
     position:fixed; inset:0; z-index:30; background:rgba(0,0,0,0.6); display:none;
     align-items:flex-end; justify-content:center;
   }
-  #composer-modal.open, #identify-modal.open{display:flex;}
+  #composer-modal.open, #identify-modal.open, #reply-modal.open{display:flex;}
+  .reply-sheet{max-height:80vh; display:flex; flex-direction:column;}
+  .reply-original{
+    background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 12px;
+    font-size:12.5px; color:var(--ink-dim); margin-bottom:14px; white-space:pre-wrap; flex-shrink:0;
+  }
+  .reply-list{overflow-y:auto; flex:1; margin-bottom:14px; min-height:40px;}
+  .reply-item{padding:10px 0; border-bottom:1px solid var(--line);}
+  .reply-item:last-child{border-bottom:none;}
+  .reply-author{font-size:11px; color:var(--ink-dim); margin-bottom:3px;}
+  .reply-author b{color:var(--ink); font-weight:500;}
+  .reply-text{font-size:13px; color:var(--ink); line-height:1.4; white-space:pre-wrap;}
+  .reply-empty{color:var(--ink-dim); font-size:12px; padding:8px 0;}
   .sheet{
     background:var(--panel-raised); width:100%; max-width:520px; border-radius:16px 16px 0 0;
     padding:20px 18px 24px; border-top:1px solid var(--line);
@@ -230,6 +242,19 @@
   </div>
 </div>
 
+<div id="reply-modal">
+  <div class="sheet reply-sheet">
+    <h2 class="sheet-title">Replies</h2>
+    <div class="reply-original" id="replyOriginal"></div>
+    <div class="reply-list" id="replyList"></div>
+    <textarea id="replyText" placeholder="Write a reply..." maxlength="500"></textarea>
+    <div class="sheet-row">
+      <button class="sheet-btn cancel" id="closeReplies">CLOSE</button>
+      <button class="sheet-btn post" id="submitReply">REPLY</button>
+    </div>
+  </div>
+</div>
+
 <div id="identify-modal">
   <div class="sheet">
     <h2 class="sheet-title">Quick ID</h2>
@@ -250,7 +275,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, collection, doc, addDoc, updateDoc, getDoc, getDocs, setDoc,
-  onSnapshot, deleteField
+  onSnapshot, deleteField, increment, orderBy, query
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -492,6 +517,7 @@ function postCard(p){
       <div class="post-author"><b>${p.author}</b> · ${deptLabel(p.authorDept)}</div>
       <div class="actions">
         ${p.pinned ? '<span class="pin-badge">PINNED</span>' : `<button class="pin-btn" data-pin="${p.id}">📌</button>`}
+        <button class="pin-btn" data-reply="${p.id}">💬 ${p.replyCount||0}</button>
         <div class="vote-group">
           <button class="vote-btn up ${dir===1?'voted':''}" data-vote-up="${p.id}">▲</button>
           <span class="vote-score">${p.votes||0}</span>
@@ -511,6 +537,7 @@ function postCard(p){
   };
   const pinBtn = el.querySelector('[data-pin]');
   if(pinBtn) pinBtn.onclick = () => requestPin(p.id);
+  el.querySelector('[data-reply]').onclick = () => openReplies(p);
   return el;
 }
 
@@ -541,6 +568,59 @@ function requestPin(id){
   updateDoc(doc(db, 'posts', id), { pinned: true })
     .then(()=>toast('Pinned to top'))
     .catch(()=>toast('Could not pin — check connection'));
+}
+
+let currentReplyPostId = null;
+let currentReplyUnsub = null;
+
+function openReplies(p){
+  currentReplyPostId = p.id;
+  $('#replyOriginal').textContent = `${p.author} · ${deptLabel(p.authorDept)}: ${p.text}`;
+  $('#replyList').innerHTML = '<div class="reply-empty">Loading...</div>';
+  $('#reply-modal').classList.add('open');
+
+  const repliesQuery = query(collection(db, 'posts', p.id, 'replies'), orderBy('ts', 'asc'));
+  currentReplyUnsub = onSnapshot(repliesQuery, snap => {
+    const replies = snap.docs.map(d => d.data());
+    if(!replies.length){
+      $('#replyList').innerHTML = '<div class="reply-empty">No replies yet.</div>';
+      return;
+    }
+    $('#replyList').innerHTML = '';
+    replies.forEach(r => {
+      const item = document.createElement('div');
+      item.className = 'reply-item';
+      item.innerHTML = `<div class="reply-author"><b>${r.author}</b> · ${deptLabel(r.authorDept)}</div><div class="reply-text"></div>`;
+      item.querySelector('.reply-text').textContent = r.text;
+      $('#replyList').appendChild(item);
+    });
+    $('#replyList').scrollTop = $('#replyList').scrollHeight;
+  }, err => {
+    console.error(err);
+    toast('Could not load replies — check connection');
+  });
+}
+
+function closeReplies(){
+  if(currentReplyUnsub){ currentReplyUnsub(); currentReplyUnsub = null; }
+  currentReplyPostId = null;
+  $('#reply-modal').classList.remove('open');
+  $('#replyText').value = '';
+}
+
+async function submitReply(){
+  const text = $('#replyText').value.trim();
+  if(!text || !currentReplyPostId) return;
+  const postId = currentReplyPostId;
+  $('#replyText').value = '';
+  try{
+    await addDoc(collection(db, 'posts', postId, 'replies'), {
+      text, author: me.name, authorDept: me.dept, ts: Date.now()
+    });
+    await updateDoc(doc(db, 'posts', postId), { replyCount: increment(1) });
+  }catch(e){
+    toast('Could not send reply — check connection');
+  }
 }
 
 function dateLine(){
@@ -633,6 +713,12 @@ $('#submitPost').onclick = async () => {
   }catch(e){
     toast('Could not post — check connection');
   }
+};
+
+$('#closeReplies').onclick = closeReplies;
+$('#submitReply').onclick = () => {
+  if(!me){ requireIdentity(submitReply); return; }
+  submitReply();
 };
 </script>
 </body>
