@@ -113,11 +113,11 @@
     font-family:'Bebas Neue'; font-size:16px; letter-spacing:0.05em; box-shadow:0 8px 24px rgba(255,138,61,0.35);
     cursor:pointer; max-width:520px; width:calc(100% - 40px);
   }
-  #composer-modal{
+  #composer-modal, #identify-modal{
     position:fixed; inset:0; z-index:30; background:rgba(0,0,0,0.6); display:none;
     align-items:flex-end; justify-content:center;
   }
-  #composer-modal.open{display:flex;}
+  #composer-modal.open, #identify-modal.open{display:flex;}
   .sheet{
     background:var(--panel-raised); width:100%; max-width:520px; border-radius:16px 16px 0 0;
     padding:20px 18px 24px; border-top:1px solid var(--line);
@@ -159,6 +159,7 @@
   <div class="dept-grid" id="deptGrid"></div>
 
   <button class="enter-btn" id="enterBtn" disabled>ONTO THE FLOOR →</button>
+  <button class="enter-btn" id="browseBtn" style="background:transparent;border:1px solid var(--line);color:var(--ink-dim);margin-top:10px;">JUST BROWSE →</button>
 </div>
 
 <div class="page-wrap" id="app" style="display:none;">
@@ -186,6 +187,20 @@
     <div class="sheet-row">
       <button class="sheet-btn cancel" id="cancelPost">CANCEL</button>
       <button class="sheet-btn post" id="submitPost">POST</button>
+    </div>
+  </div>
+</div>
+
+<div id="identify-modal">
+  <div class="sheet">
+    <h2 class="sheet-title">Quick ID</h2>
+    <label class="field-label">Your first name</label>
+    <input type="text" id="idName" placeholder="e.g. Jason" maxlength="20">
+    <label class="field-label">Your department</label>
+    <div class="dept-grid" id="idDeptGrid"></div>
+    <div class="sheet-row">
+      <button class="sheet-btn cancel" id="idCancel">CANCEL</button>
+      <button class="sheet-btn post" id="idContinue" disabled>CONTINUE</button>
     </div>
   </div>
 </div>
@@ -225,6 +240,8 @@ const MANAGER_PIN = '1919'; // soft speed bump only — not real access control
 
 let me = null;
 let selectedDept = null;
+let idSelectedDept = null;
+let afterIdentify = null;
 let activeFilter = 'all';
 let posts = [];
 let votedIds = new Set();
@@ -237,25 +254,42 @@ function toast(msg){
   setTimeout(()=>t.classList.remove('show'), 1800);
 }
 
-function deptGridInit(){
-  const grid = $('#deptGrid');
+function buildDeptGrid(container, onSelect){
   DEPARTMENTS.filter(d=>d.id!=='all').forEach(d=>{
     const b = document.createElement('button');
     b.className = 'dept-btn'; b.type='button';
     b.innerHTML = `<span class="emoji">${d.emoji}</span>${d.label}`;
     b.onclick = () => {
-      selectedDept = d.id;
-      document.querySelectorAll('.dept-btn').forEach(x=>x.classList.remove('selected'));
+      container.querySelectorAll('.dept-btn').forEach(x=>x.classList.remove('selected'));
       b.classList.add('selected');
-      checkEnter();
+      onSelect(d.id);
     };
-    grid.appendChild(b);
+    container.appendChild(b);
   });
+}
+
+function deptGridInit(){
+  buildDeptGrid($('#deptGrid'), id => { selectedDept = id; checkEnter(); });
 }
 
 function checkEnter(){
   const name = $('#nameInput').value.trim();
   $('#enterBtn').disabled = !(name && selectedDept);
+}
+
+function idDeptGridInit(){
+  buildDeptGrid($('#idDeptGrid'), id => { idSelectedDept = id; checkIdContinue(); });
+}
+
+function checkIdContinue(){
+  const name = $('#idName').value.trim();
+  $('#idContinue').disabled = !(name && idSelectedDept);
+}
+
+// Defers login until the visitor actually tries to post or vote — browsing stays open.
+function requireIdentity(cb){
+  afterIdentify = cb;
+  $('#identify-modal').classList.add('open');
 }
 
 function filterRowInit(){
@@ -297,6 +331,7 @@ function watchPosts(){
 }
 
 async function loadVotes(){
+  if(!me){ votedIds = new Set(); return; }
   try{
     const voteDoc = await getDoc(doc(db, 'votes', me.name.toLowerCase()));
     votedIds = voteDoc.exists() ? new Set(voteDoc.data().ids || []) : new Set();
@@ -343,7 +378,10 @@ function postCard(p){
     </div>
   `;
   el.querySelector('.post-body').textContent = p.text;
-  el.querySelector('[data-vote]').onclick = () => toggleVote(p.id);
+  el.querySelector('[data-vote]').onclick = () => {
+    if(!me){ requireIdentity(() => toggleVote(p.id)); return; }
+    toggleVote(p.id);
+  };
   const pinBtn = el.querySelector('[data-pin]');
   if(pinBtn) pinBtn.onclick = () => requestPin(p.id);
   return el;
@@ -385,18 +423,55 @@ function dateLine(){
 }
 
 deptGridInit();
+idDeptGridInit();
 $('#nameInput').addEventListener('input', checkEnter);
-$('#enterBtn').addEventListener('click', async () => {
-  me = { name: $('#nameInput').value.trim(), dept: selectedDept };
+$('#idName').addEventListener('input', checkIdContinue);
+
+function enterApp(){
   $('#login').style.display = 'none';
   $('#app').style.display = 'flex';
-  $('#whoChip').textContent = `${me.name} · ${deptLabel(me.dept)}`;
+  $('#whoChip').textContent = me ? `${me.name} · ${deptLabel(me.dept)}` : 'Browsing · tap to identify';
+  $('#whoChip').onclick = me ? null : () => requireIdentity(() => {});
+  $('#whoChip').style.cursor = me ? 'default' : 'pointer';
   dateLine();
-  await loadVotes();
   watchPosts();
+}
+
+$('#enterBtn').addEventListener('click', async () => {
+  me = { name: $('#nameInput').value.trim(), dept: selectedDept };
+  await loadVotes();
+  enterApp();
 });
 
-$('#openComposer').onclick = () => { $('#composer-modal').classList.add('open'); $('#postText').focus(); };
+$('#browseBtn').addEventListener('click', () => {
+  me = null;
+  enterApp();
+});
+
+$('#idCancel').onclick = () => {
+  $('#identify-modal').classList.remove('open');
+  afterIdentify = null;
+  $('#idName').value = '';
+  idSelectedDept = null;
+  document.querySelectorAll('#idDeptGrid .dept-btn').forEach(x=>x.classList.remove('selected'));
+  $('#idContinue').disabled = true;
+};
+$('#idContinue').addEventListener('click', async () => {
+  me = { name: $('#idName').value.trim(), dept: idSelectedDept };
+  $('#identify-modal').classList.remove('open');
+  $('#whoChip').textContent = `${me.name} · ${deptLabel(me.dept)}`;
+  $('#whoChip').onclick = null;
+  $('#whoChip').style.cursor = 'default';
+  await loadVotes();
+  render();
+  const cb = afterIdentify; afterIdentify = null;
+  if(cb) cb();
+});
+
+$('#openComposer').onclick = () => {
+  if(!me){ requireIdentity(() => { $('#composer-modal').classList.add('open'); $('#postText').focus(); }); return; }
+  $('#composer-modal').classList.add('open'); $('#postText').focus();
+};
 $('#cancelPost').onclick = () => { $('#composer-modal').classList.remove('open'); $('#postText').value=''; $('#pinCheck').checked=false; };
 $('#submitPost').onclick = async () => {
   const text = $('#postText').value.trim();
