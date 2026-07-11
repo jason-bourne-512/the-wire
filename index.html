@@ -64,6 +64,13 @@
     font-family:'DM Mono'; font-size:10px; color:var(--ink-dim); background:var(--panel);
     border:1px solid var(--line); padding:6px 10px; border-radius:20px; white-space:nowrap;
   }
+  .refresh-btn{
+    background:var(--panel); border:1px solid var(--line); color:var(--ink-dim);
+    width:28px; height:28px; border-radius:50%; font-size:15px; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .refresh-btn.spinning{animation:spin .6s linear;}
+  @keyframes spin{ to{ transform:rotate(360deg); } }
   .filter-row{display:flex; gap:6px; overflow-x:auto; margin-top:12px; padding-bottom:2px;}
   .filter-row::-webkit-scrollbar{display:none;}
   .chip{
@@ -169,7 +176,10 @@
         <div class="hdr-title">THE <span>WIRE</span></div>
         <div class="hdr-meta" id="dateLine"></div>
       </div>
-      <div class="who-chip" id="whoChip"></div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button class="refresh-btn" id="refreshBtn" title="Refresh">↻</button>
+        <div class="who-chip" id="whoChip"></div>
+      </div>
     </div>
     <div class="filter-row" id="filterRow"></div>
   </header>
@@ -210,7 +220,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, collection, doc, addDoc, updateDoc, getDoc, setDoc,
+  getFirestore, collection, doc, addDoc, updateDoc, getDoc, getDocs, setDoc,
   onSnapshot, arrayUnion, arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -328,6 +338,20 @@ function watchPosts(){
     console.error(err);
     toast('Connection issue — retrying...');
   });
+}
+
+async function manualRefresh(){
+  const btn = $('#refreshBtn');
+  btn.classList.add('spinning');
+  try{
+    const snap = await getDocs(postsCol);
+    posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    render();
+    toast('Up to date');
+  }catch(e){
+    toast('Could not refresh — check connection');
+  }
+  setTimeout(()=>btn.classList.remove('spinning'), 600);
 }
 
 async function loadVotes(){
@@ -467,6 +491,8 @@ $('#idContinue').addEventListener('click', async () => {
   const cb = afterIdentify; afterIdentify = null;
   if(cb) cb();
 });
+
+$('#refreshBtn').onclick = manualRefresh;
 
 $('#openComposer').onclick = () => {
   if(!me){ requireIdentity(() => { $('#composer-modal').classList.add('open'); $('#postText').focus(); }); return; }
