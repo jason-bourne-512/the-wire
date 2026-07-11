@@ -100,6 +100,8 @@
     color:var(--ink-dim); margin:18px 4px 10px; display:flex; align-items:center; gap:6px;
   }
   .section-label:first-child{margin-top:0;}
+  .archive-toggle{cursor:pointer; transition:color .15s;}
+  .archive-toggle:hover{color:var(--ink);}
   .post{
     background:var(--panel); border:1px solid var(--line); border-radius:10px;
     padding:14px 14px 12px; margin-bottom:10px; position:relative;
@@ -439,11 +441,17 @@ async function loadVotes(){
   }catch(e){ voteDirs = {}; }
 }
 
+const ARCHIVE_MS = 48 * 60 * 60 * 1000; // posts older than this move into the collapsed Archived section
+let archiveExpanded = false;
+
 function render(){
   filterRowInit();
   const visible = activeFilter==='all' ? posts : posts.filter(p=>p.dept===activeFilter);
   const pinned = visible.filter(p=>p.pinned).sort((a,b)=>b.ts-a.ts);
   const rest = visible.filter(p=>!p.pinned).sort((a,b)=>b.ts-a.ts);
+  const cutoff = Date.now() - ARCHIVE_MS;
+  const recent = rest.filter(p=>p.ts >= cutoff);
+  const archived = rest.filter(p=>p.ts < cutoff);
 
   feed.innerHTML = '';
   if(!visible.length){
@@ -455,9 +463,19 @@ function render(){
     feed.appendChild(lbl);
     pinned.forEach(p=>feed.appendChild(postCard(p)));
   }
-  const lbl2 = document.createElement('div'); lbl2.className='section-label'; lbl2.textContent='Recent';
-  feed.appendChild(lbl2);
-  rest.forEach(p=>feed.appendChild(postCard(p)));
+  if(recent.length){
+    const lbl2 = document.createElement('div'); lbl2.className='section-label'; lbl2.textContent='Recent';
+    feed.appendChild(lbl2);
+    recent.forEach(p=>feed.appendChild(postCard(p)));
+  }
+  if(archived.length){
+    const lbl3 = document.createElement('div');
+    lbl3.className = 'section-label archive-toggle';
+    lbl3.textContent = `${archiveExpanded ? '▾' : '▸'} Archived (48h+) · ${archived.length}`;
+    lbl3.onclick = () => { archiveExpanded = !archiveExpanded; render(); };
+    feed.appendChild(lbl3);
+    if(archiveExpanded) archived.forEach(p=>feed.appendChild(postCard(p)));
+  }
 }
 
 function postCard(p){
