@@ -203,6 +203,7 @@
         <div class="hdr-meta" id="dateLine"></div>
       </div>
       <div style="display:flex; align-items:center; gap:6px;">
+        <button class="refresh-btn" id="muteBtn" title="Mute new-post alerts">🔊</button>
         <button class="refresh-btn" id="refreshBtn" title="Refresh">↻</button>
         <div class="who-chip" id="whoChip"></div>
       </div>
@@ -290,6 +291,8 @@ let afterIdentify = null;
 let activeFilter = 'all';
 let posts = [];
 let voteDirs = {}; // { postId: 1 (up) | -1 (down) } for the current identity
+let knownPostIds = null; // null until the first snapshot has been processed
+let muted = localStorage.getItem('wire_muted') === '1';
 
 const $ = s => document.querySelector(s);
 const feed = $('#feed');
@@ -367,8 +370,38 @@ function timeAgo(ts){
 
 let unsubscribePosts = null;
 
+function playChime(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(880, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.15);
+    g.gain.setValueAtTime(0.4, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + 0.3);
+  }catch(e){}
+}
+
+function notifyNewPost(){
+  if(muted) return;
+  playChime();
+  if(navigator.vibrate) navigator.vibrate(200);
+}
+
 function watchPosts(){
   unsubscribePosts = onSnapshot(postsCol, snap => {
+    if(knownPostIds){
+      snap.docChanges().forEach(change => {
+        if(change.type === 'added' && !knownPostIds.has(change.doc.id)){
+          const data = change.doc.data();
+          if(!me || data.author !== me.name) notifyNewPost();
+        }
+      });
+    }
+    knownPostIds = new Set(snap.docs.map(d => d.id));
     posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   }, err => {
@@ -544,6 +577,17 @@ $('#idContinue').addEventListener('click', async () => {
 });
 
 $('#refreshBtn').onclick = manualRefresh;
+
+function updateMuteBtn(){
+  $('#muteBtn').textContent = muted ? '🔇' : '🔊';
+}
+updateMuteBtn();
+$('#muteBtn').onclick = () => {
+  muted = !muted;
+  localStorage.setItem('wire_muted', muted ? '1' : '0');
+  updateMuteBtn();
+  toast(muted ? 'Alerts muted' : 'Alerts on');
+};
 
 $('#openComposer').onclick = () => {
   if(!me){ requireIdentity(() => { $('#composer-modal').classList.add('open'); $('#postText').focus(); }); return; }
