@@ -19,6 +19,7 @@
     --accent-dim:#7a4a26;
     --pin:#ffd166;
     --up:#5fd0a0;
+    --down:#e0605c;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   body{
@@ -101,11 +102,17 @@
   .post-author{font-size:11px; color:var(--ink-dim);}
   .post-author b{color:var(--ink); font-weight:500;}
   .actions{display:flex; gap:6px; align-items:center;}
-  .upvote{
-    display:flex; align-items:center; gap:5px; background:var(--panel-raised); border:1px solid var(--line);
-    color:var(--ink-dim); padding:6px 10px; border-radius:20px; font-family:'DM Mono'; font-size:11px; cursor:pointer;
+  .vote-group{
+    display:flex; align-items:center; gap:1px; background:var(--panel-raised); border:1px solid var(--line);
+    border-radius:20px; padding:2px;
   }
-  .upvote.voted{border-color:var(--up); color:var(--up); background:#0f1e17;}
+  .vote-btn{
+    background:transparent; border:none; color:var(--ink-dim); padding:5px 9px; border-radius:16px;
+    font-family:'DM Mono'; font-size:11px; cursor:pointer;
+  }
+  .vote-btn.up.voted{color:var(--up); background:#0f1e17;}
+  .vote-btn.down.voted{color:var(--down); background:#241010;}
+  .vote-score{font-family:'DM Mono'; font-size:11px; color:var(--ink); min-width:14px; text-align:center;}
   .pin-btn{
     background:var(--panel-raised); border:1px solid var(--line); color:var(--ink-dim);
     padding:6px 9px; border-radius:20px; font-size:12px; cursor:pointer;
@@ -221,7 +228,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, collection, doc, addDoc, updateDoc, getDoc, getDocs, setDoc,
-  onSnapshot, arrayUnion, arrayRemove
+  onSnapshot, deleteField
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -254,7 +261,7 @@ let idSelectedDept = null;
 let afterIdentify = null;
 let activeFilter = 'all';
 let posts = [];
-let votedIds = new Set();
+let voteDirs = {}; // { postId: 1 (up) | -1 (down) } for the current identity
 
 const $ = s => document.querySelector(s);
 const feed = $('#feed');
@@ -355,11 +362,18 @@ async function manualRefresh(){
 }
 
 async function loadVotes(){
-  if(!me){ votedIds = new Set(); return; }
+  if(!me){ voteDirs = {}; return; }
   try{
     const voteDoc = await getDoc(doc(db, 'votes', me.name.toLowerCase()));
-    votedIds = voteDoc.exists() ? new Set(voteDoc.data().ids || []) : new Set();
-  }catch(e){ votedIds = new Set(); }
+    if(voteDoc.exists()){
+      const data = voteDoc.data();
+      voteDirs = { ...(data.dirs || {}) };
+      // legacy format from before downvotes existed — treat old upvotes as direction 1
+      (data.ids || []).forEach(id => { if(!(id in voteDirs)) voteDirs[id] = 1; });
+    } else {
+      voteDirs = {};
+    }
+  }catch(e){ voteDirs = {}; }
 }
 
 function render(){
@@ -386,7 +400,7 @@ function render(){
 function postCard(p){
   const el = document.createElement('div');
   el.className = 'post' + (p.pinned?' pinned':'');
-  const voted = votedIds.has(p.id);
+  const dir = voteDirs[p.id] || 0;
   el.innerHTML = `
     <div class="post-top">
       <span class="post-dept">${deptLabel(p.dept)}</span>
@@ -397,36 +411,43 @@ function postCard(p){
       <div class="post-author"><b>${p.author}</b> · ${deptLabel(p.authorDept)}</div>
       <div class="actions">
         ${p.pinned ? '<span class="pin-badge">PINNED</span>' : `<button class="pin-btn" data-pin="${p.id}">📌</button>`}
-        <button class="upvote ${voted?'voted':''}" data-vote="${p.id}">▲ <span>${p.votes||0}</span></button>
+        <div class="vote-group">
+          <button class="vote-btn up ${dir===1?'voted':''}" data-vote-up="${p.id}">▲</button>
+          <span class="vote-score">${p.votes||0}</span>
+          <button class="vote-btn down ${dir===-1?'voted':''}" data-vote-down="${p.id}">▼</button>
+        </div>
       </div>
     </div>
   `;
   el.querySelector('.post-body').textContent = p.text;
-  el.querySelector('[data-vote]').onclick = () => {
-    if(!me){ requireIdentity(() => toggleVote(p.id)); return; }
-    toggleVote(p.id);
+  el.querySelector('[data-vote-up]').onclick = () => {
+    if(!me){ requireIdentity(() => castVote(p.id, 1)); return; }
+    castVote(p.id, 1);
+  };
+  el.querySelector('[data-vote-down]').onclick = () => {
+    if(!me){ requireIdentity(() => castVote(p.id, -1)); return; }
+    castVote(p.id, -1);
   };
   const pinBtn = el.querySelector('[data-pin]');
   if(pinBtn) pinBtn.onclick = () => requestPin(p.id);
   return el;
 }
 
-async function toggleVote(id){
+async function castVote(id, direction){
   const p = posts.find(x=>x.id===id); if(!p) return;
   const postRef = doc(db, 'posts', id);
   const voteRef = doc(db, 'votes', me.name.toLowerCase());
-  const wasVoted = votedIds.has(id);
+  const current = voteDirs[id] || 0;
+  const next = current === direction ? 0 : direction; // clicking the same direction again un-votes
+  const delta = next - current;
+  if(delta === 0) return;
 
-  if(wasVoted){
-    votedIds.delete(id);
-  } else {
-    votedIds.add(id);
-  }
+  if(next === 0) delete voteDirs[id]; else voteDirs[id] = next;
   render();
 
   try{
-    await setDoc(voteRef, { ids: wasVoted ? arrayRemove(id) : arrayUnion(id) }, { merge: true });
-    await updateDoc(postRef, { votes: (p.votes||0) + (wasVoted ? -1 : 1) });
+    await updateDoc(postRef, { votes: (p.votes||0) + delta });
+    await setDoc(voteRef, { [`dirs.${id}`]: next === 0 ? deleteField() : next }, { merge: true });
   }catch(e){
     toast('Could not save vote — check connection');
   }
