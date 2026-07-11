@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>The Wire — AUSDW</title>
+<style>html,body{background:#09090c}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#09090c;
+    --panel:#131318;
+    --panel-raised:#1a1a21;
+    --line:#26262f;
+    --ink:#f0ece3;
+    --ink-dim:#8b8b96;
+    --accent:#ff8a3d;
+    --accent-dim:#7a4a26;
+    --pin:#ffd166;
+    --up:#5fd0a0;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'DM Sans',sans-serif; font-size:12px; font-weight:400;
+    overscroll-behavior:none; min-height:100vh;
+  }
+  h1,h2,h3,.display{font-family:'Bebas Neue',sans-serif; letter-spacing:0.02em;}
+  .mono{font-family:'DM Mono',monospace;}
+  .page-wrap{max-width:520px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column;}
+  #login{display:flex; flex-direction:column; justify-content:center; min-height:100vh; padding:32px 24px;}
+  .login-mark{font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:0.35em; color:var(--accent); margin-bottom:6px;}
+  .login-title{font-size:52px; line-height:0.92; margin:0 0 8px;}
+  .login-sub{color:var(--ink-dim); font-size:12px; margin-bottom:36px; max-width:340px; line-height:1.5;}
+  .field-label{font-family:'DM Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.12em; color:var(--ink-dim); margin-bottom:8px; display:block;}
+  input[type=text]{
+    width:100%; background:var(--panel); border:1px solid var(--line); color:var(--ink);
+    padding:14px 14px; border-radius:6px; font-family:'DM Sans'; font-size:15px; margin-bottom:22px;
+  }
+  input[type=text]:focus{outline:none; border-color:var(--accent);}
+  .dept-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:28px;}
+  .dept-btn{
+    background:var(--panel); border:1px solid var(--line); color:var(--ink-dim);
+    padding:14px 10px; border-radius:6px; font-family:'DM Sans'; font-size:12.5px; font-weight:500;
+    text-align:left; cursor:pointer; transition:all .15s;
+  }
+  .dept-btn .emoji{font-size:15px; margin-right:6px;}
+  .dept-btn.selected{border-color:var(--accent); color:var(--ink); background:#1c1610;}
+  .enter-btn{
+    background:var(--accent); color:#1a0f04; border:none; padding:15px; border-radius:6px;
+    font-family:'Bebas Neue'; font-size:18px; letter-spacing:0.05em; cursor:pointer;
+  }
+  .enter-btn:disabled{background:var(--panel-raised); color:var(--ink-dim); cursor:not-allowed;}
+  header{
+    position:sticky; top:0; z-index:10; background:rgba(9,9,12,0.92); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line); padding:14px 18px 12px;
+  }
+  .hdr-row{display:flex; justify-content:space-between; align-items:flex-start;}
+  .hdr-title{font-size:26px; line-height:1; color:var(--ink);}
+  .hdr-title span{color:var(--accent);}
+  .hdr-meta{font-family:'DM Mono'; font-size:9.5px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:0.08em; margin-top:3px;}
+  .who-chip{
+    font-family:'DM Mono'; font-size:10px; color:var(--ink-dim); background:var(--panel);
+    border:1px solid var(--line); padding:6px 10px; border-radius:20px; white-space:nowrap;
+  }
+  .filter-row{display:flex; gap:6px; overflow-x:auto; margin-top:12px; padding-bottom:2px;}
+  .filter-row::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:0 0 auto; font-family:'DM Mono'; font-size:10.5px; padding:7px 12px; border-radius:20px;
+    border:1px solid var(--line); color:var(--ink-dim); background:var(--panel); cursor:pointer; white-space:nowrap;
+  }
+  .chip.active{border-color:var(--accent); color:var(--accent); background:#1c1610;}
+  main{flex:1; padding:16px 14px 100px;}
+  .section-label{
+    font-family:'DM Mono'; font-size:10px; text-transform:uppercase; letter-spacing:0.14em;
+    color:var(--ink-dim); margin:18px 4px 10px; display:flex; align-items:center; gap:6px;
+  }
+  .section-label:first-child{margin-top:0;}
+  .post{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:14px 14px 12px; margin-bottom:10px; position:relative;
+  }
+  .post.pinned{border-color:var(--pin); background:#1c1a10;}
+  .post-top{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;}
+  .post-dept{
+    font-family:'DM Mono'; font-size:9.5px; text-transform:uppercase; letter-spacing:0.08em;
+    color:var(--accent); background:#1c1610; border:1px solid var(--accent-dim);
+    padding:3px 8px; border-radius:4px;
+  }
+  .post-time{font-family:'DM Mono'; font-size:9.5px; color:var(--ink-dim);}
+  .post-body{font-size:13.5px; line-height:1.5; color:var(--ink); margin-bottom:10px; white-space:pre-wrap;}
+  .post-bottom{display:flex; justify-content:space-between; align-items:center;}
+  .post-author{font-size:11px; color:var(--ink-dim);}
+  .post-author b{color:var(--ink); font-weight:500;}
+  .actions{display:flex; gap:6px; align-items:center;}
+  .upvote{
+    display:flex; align-items:center; gap:5px; background:var(--panel-raised); border:1px solid var(--line);
+    color:var(--ink-dim); padding:6px 10px; border-radius:20px; font-family:'DM Mono'; font-size:11px; cursor:pointer;
+  }
+  .upvote.voted{border-color:var(--up); color:var(--up); background:#0f1e17;}
+  .pin-btn{
+    background:var(--panel-raised); border:1px solid var(--line); color:var(--ink-dim);
+    padding:6px 9px; border-radius:20px; font-size:12px; cursor:pointer;
+  }
+  .pin-btn.on{border-color:var(--pin); color:var(--pin); background:#241f0a;}
+  .pin-badge{font-family:'DM Mono'; font-size:9px; color:var(--pin); letter-spacing:0.1em;}
+  .empty{text-align:center; color:var(--ink-dim); padding:60px 20px; font-size:12.5px; line-height:1.6;}
+  .empty .display{font-size:32px; color:var(--ink-dim); margin-bottom:6px;}
+  .fab{
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%); z-index:20;
+    background:var(--accent); color:#1a0f04; border:none; padding:15px 28px; border-radius:30px;
+    font-family:'Bebas Neue'; font-size:16px; letter-spacing:0.05em; box-shadow:0 8px 24px rgba(255,138,61,0.35);
+    cursor:pointer; max-width:520px; width:calc(100% - 40px);
+  }
+  #composer-modal{
+    position:fixed; inset:0; z-index:30; background:rgba(0,0,0,0.6); display:none;
+    align-items:flex-end; justify-content:center;
+  }
+  #composer-modal.open{display:flex;}
+  .sheet{
+    background:var(--panel-raised); width:100%; max-width:520px; border-radius:16px 16px 0 0;
+    padding:20px 18px 24px; border-top:1px solid var(--line);
+  }
+  .sheet-title{font-size:24px; margin:0 0 14px;}
+  textarea{
+    width:100%; background:var(--panel); border:1px solid var(--line); color:var(--ink);
+    padding:12px; border-radius:8px; font-family:'DM Sans'; font-size:14px; min-height:100px;
+    resize:vertical; margin-bottom:14px;
+  }
+  textarea:focus{outline:none; border-color:var(--accent);}
+  .sheet-row{display:flex; gap:8px;}
+  .sheet-btn{
+    flex:1; padding:13px; border-radius:8px; font-family:'Bebas Neue'; font-size:15px; letter-spacing:0.04em; cursor:pointer; border:none;
+  }
+  .sheet-btn.cancel{background:transparent; border:1px solid var(--line); color:var(--ink-dim);}
+  .sheet-btn.post{background:var(--accent); color:#1a0f04;}
+  .sheet-btn.post:disabled{background:var(--panel); color:var(--ink-dim);}
+  .pin-note{font-family:'DM Mono'; font-size:10px; color:var(--ink-dim); margin-bottom:14px; display:flex; align-items:center; gap:6px;}
+  .toast{
+    position:fixed; top:14px; left:50%; transform:translateX(-50%); background:var(--panel-raised);
+    border:1px solid var(--line); color:var(--ink); padding:9px 16px; border-radius:20px; font-size:11.5px;
+    z-index:50; opacity:0; transition:opacity .2s; pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<div id="login" class="page-wrap">
+  <div class="login-mark">AUSDW STAFF</div>
+  <h1 class="login-title">THE WIRE</h1>
+  <div class="login-sub">One board, every department. Say something, hear back, see what's landing.</div>
+
+  <label class="field-label">Your first name</label>
+  <input type="text" id="nameInput" placeholder="e.g. Jason" maxlength="20">
+
+  <label class="field-label">Your department</label>
+  <div class="dept-grid" id="deptGrid"></div>
+
+  <button class="enter-btn" id="enterBtn" disabled>ONTO THE FLOOR →</button>
+</div>
+
+<div class="page-wrap" id="app" style="display:none;">
+  <header>
+    <div class="hdr-row">
+      <div>
+        <div class="hdr-title">THE <span>WIRE</span></div>
+        <div class="hdr-meta" id="dateLine"></div>
+      </div>
+      <div class="who-chip" id="whoChip"></div>
+    </div>
+    <div class="filter-row" id="filterRow"></div>
+  </header>
+
+  <main id="feed"></main>
+
+  <button class="fab" id="openComposer">+ POST TO THE WIRE</button>
+</div>
+
+<div id="composer-modal">
+  <div class="sheet">
+    <h2 class="sheet-title">New post</h2>
+    <textarea id="postText" placeholder="What's going on? A win, a heads up, a thank you..." maxlength="500"></textarea>
+    <label class="pin-note"><input type="checkbox" id="pinCheck" style="margin:0;"> Pin this (needs manager PIN)</label>
+    <div class="sheet-row">
+      <button class="sheet-btn cancel" id="cancelPost">CANCEL</button>
+      <button class="sheet-btn post" id="submitPost">POST</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, collection, doc, addDoc, updateDoc, getDoc, setDoc,
+  onSnapshot, arrayUnion, arrayRemove
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCr9z1e8neChgnRsEeSHX7fM_5h_jhTcxQ",
+  authDomain: "the-wire-587e6.firebaseapp.com",
+  projectId: "the-wire-587e6",
+  storageBucket: "the-wire-587e6.firebasestorage.app",
+  messagingSenderId: "18587866711",
+  appId: "1:18587866711:web:96ca4822f8a73512"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const postsCol = collection(db, 'posts');
+
+const DEPARTMENTS = [
+  {id:'banquets', label:'Banquets', emoji:'🍽️'},
+  {id:'housekeeping', label:'Housekeeping', emoji:'🧺'},
+  {id:'frontdesk', label:'Front Desk', emoji:'🛎️'},
+  {id:'kitchen', label:'Kitchen', emoji:'🔪'},
+  {id:'engineering', label:'Engineering', emoji:'🔧'},
+  {id:'sales', label:'Sales & Events', emoji:'📋'},
+  {id:'security', label:'Security', emoji:'🛡️'},
+  {id:'all', label:'General / All', emoji:'🏨'},
+];
+const MANAGER_PIN = '1919'; // soft speed bump only — not real access control
+
+let me = null;
+let selectedDept = null;
+let activeFilter = 'all';
+let posts = [];
+let votedIds = new Set();
+
+const $ = s => document.querySelector(s);
+const feed = $('#feed');
+
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+function deptGridInit(){
+  const grid = $('#deptGrid');
+  DEPARTMENTS.filter(d=>d.id!=='all').forEach(d=>{
+    const b = document.createElement('button');
+    b.className = 'dept-btn'; b.type='button';
+    b.innerHTML = `<span class="emoji">${d.emoji}</span>${d.label}`;
+    b.onclick = () => {
+      selectedDept = d.id;
+      document.querySelectorAll('.dept-btn').forEach(x=>x.classList.remove('selected'));
+      b.classList.add('selected');
+      checkEnter();
+    };
+    grid.appendChild(b);
+  });
+}
+
+function checkEnter(){
+  const name = $('#nameInput').value.trim();
+  $('#enterBtn').disabled = !(name && selectedDept);
+}
+
+function filterRowInit(){
+  const row = $('#filterRow'); row.innerHTML = '';
+  [{id:'all', label:'All posts', emoji:'📌'}, ...DEPARTMENTS].forEach(d=>{
+    if(d.id==='all' && row.querySelector('[data-f="all"]')) return;
+    const c = document.createElement('div');
+    c.className = 'chip' + (activeFilter===d.id ? ' active':'');
+    c.textContent = (d.emoji?d.emoji+' ':'') + d.label;
+    c.dataset.f = d.id;
+    c.onclick = () => { activeFilter = d.id; render(); };
+    row.appendChild(c);
+  });
+}
+
+function deptLabel(id){
+  const d = DEPARTMENTS.find(x=>x.id===id);
+  return d ? d.label : id;
+}
+
+function timeAgo(ts){
+  const diff = Math.floor((Date.now()-ts)/1000);
+  if(diff < 60) return 'just now';
+  if(diff < 3600) return Math.floor(diff/60)+'m ago';
+  if(diff < 86400) return Math.floor(diff/3600)+'h ago';
+  return Math.floor(diff/86400)+'d ago';
+}
+
+let unsubscribePosts = null;
+
+function watchPosts(){
+  unsubscribePosts = onSnapshot(postsCol, snap => {
+    posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    render();
+  }, err => {
+    console.error(err);
+    toast('Connection issue — retrying...');
+  });
+}
+
+async function loadVotes(){
+  try{
+    const voteDoc = await getDoc(doc(db, 'votes', me.name.toLowerCase()));
+    votedIds = voteDoc.exists() ? new Set(voteDoc.data().ids || []) : new Set();
+  }catch(e){ votedIds = new Set(); }
+}
+
+function render(){
+  filterRowInit();
+  const visible = activeFilter==='all' ? posts : posts.filter(p=>p.dept===activeFilter);
+  const pinned = visible.filter(p=>p.pinned).sort((a,b)=>b.ts-a.ts);
+  const rest = visible.filter(p=>!p.pinned).sort((a,b)=>b.ts-a.ts);
+
+  feed.innerHTML = '';
+  if(!visible.length){
+    feed.innerHTML = `<div class="empty"><div class="display">QUIET FLOOR</div>Nothing here yet. Be the first to post.</div>`;
+    return;
+  }
+  if(pinned.length){
+    const lbl = document.createElement('div'); lbl.className='section-label'; lbl.textContent='📌 Pinned';
+    feed.appendChild(lbl);
+    pinned.forEach(p=>feed.appendChild(postCard(p)));
+  }
+  const lbl2 = document.createElement('div'); lbl2.className='section-label'; lbl2.textContent='Recent';
+  feed.appendChild(lbl2);
+  rest.forEach(p=>feed.appendChild(postCard(p)));
+}
+
+function postCard(p){
+  const el = document.createElement('div');
+  el.className = 'post' + (p.pinned?' pinned':'');
+  const voted = votedIds.has(p.id);
+  el.innerHTML = `
+    <div class="post-top">
+      <span class="post-dept">${deptLabel(p.dept)}</span>
+      <span class="post-time">${timeAgo(p.ts)}</span>
+    </div>
+    <div class="post-body"></div>
+    <div class="post-bottom">
+      <div class="post-author"><b>${p.author}</b> · ${deptLabel(p.authorDept)}</div>
+      <div class="actions">
+        ${p.pinned ? '<span class="pin-badge">PINNED</span>' : `<button class="pin-btn" data-pin="${p.id}">📌</button>`}
+        <button class="upvote ${voted?'voted':''}" data-vote="${p.id}">▲ <span>${p.votes||0}</span></button>
+      </div>
+    </div>
+  `;
+  el.querySelector('.post-body').textContent = p.text;
+  el.querySelector('[data-vote]').onclick = () => toggleVote(p.id);
+  const pinBtn = el.querySelector('[data-pin]');
+  if(pinBtn) pinBtn.onclick = () => requestPin(p.id);
+  return el;
+}
+
+async function toggleVote(id){
+  const p = posts.find(x=>x.id===id); if(!p) return;
+  const postRef = doc(db, 'posts', id);
+  const voteRef = doc(db, 'votes', me.name.toLowerCase());
+  const wasVoted = votedIds.has(id);
+
+  if(wasVoted){
+    votedIds.delete(id);
+  } else {
+    votedIds.add(id);
+  }
+  render();
+
+  try{
+    await setDoc(voteRef, { ids: wasVoted ? arrayRemove(id) : arrayUnion(id) }, { merge: true });
+    await updateDoc(postRef, { votes: (p.votes||0) + (wasVoted ? -1 : 1) });
+  }catch(e){
+    toast('Could not save vote — check connection');
+  }
+}
+
+function requestPin(id){
+  const pin = prompt('Manager PIN to pin this post:');
+  if(pin === null) return;
+  if(pin !== MANAGER_PIN){ toast('Wrong PIN'); return; }
+  updateDoc(doc(db, 'posts', id), { pinned: true })
+    .then(()=>toast('Pinned to top'))
+    .catch(()=>toast('Could not pin — check connection'));
+}
+
+function dateLine(){
+  const d = new Date();
+  $('#dateLine').textContent = d.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'}).toUpperCase() + ' · AUSDW';
+}
+
+deptGridInit();
+$('#nameInput').addEventListener('input', checkEnter);
+$('#enterBtn').addEventListener('click', async () => {
+  me = { name: $('#nameInput').value.trim(), dept: selectedDept };
+  $('#login').style.display = 'none';
+  $('#app').style.display = 'flex';
+  $('#whoChip').textContent = `${me.name} · ${deptLabel(me.dept)}`;
+  dateLine();
+  await loadVotes();
+  watchPosts();
+});
+
+$('#openComposer').onclick = () => { $('#composer-modal').classList.add('open'); $('#postText').focus(); };
+$('#cancelPost').onclick = () => { $('#composer-modal').classList.remove('open'); $('#postText').value=''; $('#pinCheck').checked=false; };
+$('#submitPost').onclick = async () => {
+  const text = $('#postText').value.trim();
+  if(!text) return;
+  let pinned = false;
+  if($('#pinCheck').checked){
+    const pin = prompt('Manager PIN to pin this post:');
+    if(pin === MANAGER_PIN) pinned = true;
+    else if(pin !== null) toast('Wrong PIN — posted unpinned');
+  }
+  const post = {
+    text, dept: me.dept, author: me.name, authorDept: me.dept,
+    ts: Date.now(), votes: 0, pinned
+  };
+  $('#composer-modal').classList.remove('open');
+  $('#postText').value=''; $('#pinCheck').checked=false;
+  try{
+    await addDoc(postsCol, post);
+    toast('Posted to the Wire');
+  }catch(e){
+    toast('Could not post — check connection');
+  }
+};
+</script>
+</body>
+</html>
