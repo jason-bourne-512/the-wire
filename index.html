@@ -527,7 +527,7 @@ function postCard(p){
     </div>
     <div class="post-body"></div>
     <div class="post-bottom">
-      <div class="post-author"><b>${p.author}</b> · ${deptLabel(p.authorDept)}</div>
+      <div class="post-author"><b>${p.author}</b></div>
       <div class="actions">
         ${p.pinned ? '<span class="pin-badge">PINNED</span>' : ''}
         <button class="pin-btn" data-reply="${p.id}">💬 ${p.replyCount||0}</button>
