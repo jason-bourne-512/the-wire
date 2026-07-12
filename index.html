@@ -90,6 +90,24 @@
   .refresh-btn.spinning{animation:spin .6s linear;}
   @keyframes spin{ to{ transform:rotate(360deg); } }
   .filter-row{display:flex; gap:6px; overflow-x:auto; margin-top:12px; padding-bottom:2px;}
+  .flow-card{
+    margin:16px 14px 0; padding:16px 16px 14px; border-radius:12px;
+    border:1px solid var(--accent-dim);
+    background:
+      radial-gradient(ellipse 320px 160px at 12% 15%, rgba(255,138,61,0.14), transparent 70%),
+      var(--panel);
+  }
+  .flow-label{
+    font-family:'DM Mono'; font-size:10px; text-transform:uppercase; letter-spacing:0.16em;
+    color:var(--accent); margin-bottom:8px;
+  }
+  .flow-title{font-family:'Bebas Neue'; font-size:22px; color:var(--ink); letter-spacing:0.02em; margin-bottom:8px;}
+  .flow-body{font-size:13px; line-height:1.6; color:var(--ink-dim); margin-bottom:12px;}
+  .flow-tip{
+    font-family:'DM Mono'; font-size:10.5px; letter-spacing:0.03em; line-height:1.6; color:var(--ink);
+    border-top:1px solid var(--line); padding-top:10px;
+  }
+  .flow-tip b{color:var(--accent);}
   .filter-row::-webkit-scrollbar{display:none;}
   .chip{
     flex:0 0 auto; font-family:'DM Mono'; font-size:10.5px; padding:7px 12px; border-radius:20px;
@@ -233,6 +251,13 @@
     </div>
     <div class="filter-row" id="filterRow"></div>
   </header>
+
+  <div class="flow-card">
+    <div class="flow-label">✦ Daily Flow</div>
+    <div class="flow-title">Finding Flow on the Floor</div>
+    <div class="flow-body">Flow is the state psychologist Mihaly Csikszentmihalyi found across athletes, artists, and surgeons alike — full immersion, sharp focus, no sense of time passing. It shows up on the floor too: the moment a captain running a 300-cover turn goes quiet and locked-in, moving faster with less effort than someone standing idle at an empty station. Three things bring it on — a clear goal, feedback in real time, and a task that stretches your skill without overwhelming it.</div>
+    <div class="flow-tip"><b>TODAY'S PRACTICE —</b> Pick one task this shift and give it your full attention. No phone, no multitasking. Notice what changes.</div>
+  </div>
 
   <main id="feed"></main>
 
