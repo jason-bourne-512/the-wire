@@ -115,7 +115,11 @@
     background:#1a1a1f; border:1px solid; padding:3px 8px; border-radius:4px;
   }
   .post-time{font-family:'DM Mono'; font-size:9.5px; color:var(--ink-dim);}
-  .post-body{font-size:13.5px; line-height:1.5; color:var(--ink); margin-bottom:10px; white-space:pre-wrap;}
+  .post-body{
+    font-size:13.5px; line-height:1.5; color:var(--ink); margin-bottom:10px; white-space:pre-wrap;
+    transition:opacity .4s; -webkit-user-select:none; user-select:none;
+  }
+  .post-body.pressing{opacity:0.5;}
   .post-bottom{display:flex; justify-content:space-between; align-items:center;}
   .post-author{font-size:11px; color:var(--ink-dim);}
   .post-author b{color:var(--ink); font-weight:500;}
@@ -141,10 +145,13 @@
   .empty .display{font-size:32px; color:var(--ink-dim); margin-bottom:6px;}
   .fab{
     position:fixed; bottom:22px; left:50%; transform:translateX(-50%); z-index:20;
-    background:var(--accent); color:#1a0f04; border:none; padding:15px 28px; border-radius:30px;
-    font-family:'Bebas Neue'; font-size:16px; letter-spacing:0.05em; box-shadow:0 8px 24px rgba(255,138,61,0.35);
-    cursor:pointer; max-width:520px; width:calc(100% - 40px);
+    width:64px; height:64px; border-radius:50%;
+    background:#c9915c; color:#1a0f04; border:none;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    box-shadow:0 6px 18px rgba(0,0,0,0.4); cursor:pointer;
   }
+  .fab-plus{font-family:'Bebas Neue'; font-size:24px; line-height:1;}
+  .fab-label{font-family:'DM Mono',monospace; font-size:8.5px; letter-spacing:0.1em; text-transform:uppercase; margin-top:2px;}
   #composer-modal, #identify-modal, #reply-modal{
     position:fixed; inset:0; z-index:30; background:rgba(0,0,0,0.6); display:none;
     align-items:flex-end; justify-content:center;
@@ -229,7 +236,10 @@
 
   <main id="feed"></main>
 
-  <button class="fab" id="openComposer">+ POST TO THE WIRE</button>
+  <button class="fab" id="openComposer">
+    <span class="fab-plus">+</span>
+    <span class="fab-label">Post</span>
+  </button>
 </div>
 
 <div id="composer-modal">
@@ -519,7 +529,7 @@ function postCard(p){
     <div class="post-bottom">
       <div class="post-author"><b>${p.author}</b> · ${deptLabel(p.authorDept)}</div>
       <div class="actions">
-        ${p.pinned ? '<span class="pin-badge">PINNED</span>' : `<button class="pin-btn" data-pin="${p.id}">📌</button>`}
+        ${p.pinned ? '<span class="pin-badge">PINNED</span>' : ''}
         <button class="pin-btn" data-reply="${p.id}">💬 ${p.replyCount||0}</button>
         <div class="vote-group">
           <button class="vote-btn up ${dir===1?'voted':''}" data-vote-up="${p.id}">▲</button>
@@ -542,8 +552,7 @@ function postCard(p){
     if(!me){ requireIdentity(() => castVote(p.id, -1)); return; }
     castVote(p.id, -1);
   };
-  const pinBtn = el.querySelector('[data-pin]');
-  if(pinBtn) pinBtn.onclick = () => requestPin(p.id);
+  if(!p.pinned) attachLongPressPin(el.querySelector('.post-body'), p.id);
   el.querySelector('[data-reply]').onclick = () => openReplies(p);
   return el;
 }
@@ -575,6 +584,30 @@ function requestPin(id){
   updateDoc(doc(db, 'posts', id), { pinned: true })
     .then(()=>toast('Pinned to top'))
     .catch(()=>toast('Could not pin — check connection'));
+}
+
+const LONG_PRESS_MS = 1500;
+
+// Hold a post's text down for 1.5s to reveal the PIN prompt — no visible
+// pin control, so nobody else knows the option exists.
+function attachLongPressPin(target, postId){
+  let timer = null;
+  const start = () => {
+    target.classList.add('pressing');
+    timer = setTimeout(() => {
+      target.classList.remove('pressing');
+      timer = null;
+      requestPin(postId);
+    }, LONG_PRESS_MS);
+  };
+  const cancel = () => {
+    if(timer){ clearTimeout(timer); timer = null; }
+    target.classList.remove('pressing');
+  };
+  target.addEventListener('pointerdown', start);
+  target.addEventListener('pointerup', cancel);
+  target.addEventListener('pointerleave', cancel);
+  target.addEventListener('pointercancel', cancel);
 }
 
 let currentReplyPostId = null;
