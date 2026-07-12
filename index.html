@@ -205,7 +205,7 @@
   <div class="login-sub">Stay connected across every department.</div>
 
   <label class="field-label">Your first name</label>
-  <input type="text" id="nameInput" placeholder="e.g. Jason" maxlength="20">
+  <input type="text" id="nameInput" placeholder="e.g. Kim" maxlength="20">
 
   <label class="field-label">Your department</label>
   <div class="dept-grid" id="deptGrid"></div>
@@ -227,7 +227,6 @@
       </div>
       <div style="display:flex; align-items:center; gap:6px;">
         <button class="refresh-btn" id="backBtn" title="Back to start">←</button>
-        <button class="refresh-btn" id="muteBtn" title="Mute new-post alerts">🔊</button>
         <button class="refresh-btn" id="refreshBtn" title="Refresh">↻</button>
         <div class="who-chip" id="whoChip"></div>
       </div>
@@ -272,7 +271,7 @@
   <div class="sheet">
     <h2 class="sheet-title">Quick ID</h2>
     <label class="field-label">Your first name</label>
-    <input type="text" id="idName" placeholder="e.g. Jason" maxlength="20">
+    <input type="text" id="idName" placeholder="e.g. Kim" maxlength="20">
     <label class="field-label">Your department</label>
     <div class="dept-grid" id="idDeptGrid"></div>
     <div class="sheet-row">
@@ -332,7 +331,7 @@ let activeFilter = 'all';
 let posts = [];
 let voteDirs = {}; // { postId: 1 (up) | -1 (down) } for the current identity
 let knownPostIds = null; // null until the first snapshot has been processed
-let muted = localStorage.getItem('wire_muted') === '1';
+let muted = false;
 
 const $ = s => document.querySelector(s);
 const feed = $('#feed');
@@ -751,16 +750,6 @@ $('#idContinue').addEventListener('click', async () => {
 $('#refreshBtn').onclick = manualRefresh;
 $('#backBtn').onclick = goToSplash;
 
-function updateMuteBtn(){
-  $('#muteBtn').textContent = muted ? '🔇' : '🔊';
-}
-updateMuteBtn();
-$('#muteBtn').onclick = () => {
-  muted = !muted;
-  localStorage.setItem('wire_muted', muted ? '1' : '0');
-  updateMuteBtn();
-  toast(muted ? 'Alerts muted' : 'Alerts on');
-};
 
 $('#openComposer').onclick = () => {
   if(!me){ requireIdentity(() => { $('#composer-modal').classList.add('open'); $('#postText').focus(); }); return; }
