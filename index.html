@@ -109,7 +109,8 @@
     padding:14px 14px 12px; margin-bottom:10px; position:relative;
   }
   .post.pinned{border-color:var(--pin); background:#1c1a10;}
-  .post-top{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;}
+  .post-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .post-top-left{display:flex; align-items:center; gap:8px;}
   .post-dept{
     font-family:'DM Mono'; font-size:9.5px; text-transform:uppercase; letter-spacing:0.08em;
     background:#1a1a1f; border:1px solid; padding:3px 8px; border-radius:4px;
@@ -120,7 +121,7 @@
     transition:opacity .4s; -webkit-user-select:none; user-select:none;
   }
   .post-body.pressing{opacity:0.5;}
-  .post-bottom{display:flex; justify-content:space-between; align-items:center;}
+  .post-bottom{display:flex; justify-content:flex-end; align-items:center;}
   .post-author{font-size:11px; color:var(--ink-dim);}
   .post-author b{color:var(--ink); font-weight:500;}
   .actions{display:flex; gap:6px; align-items:center;}
@@ -522,12 +523,14 @@ function postCard(p){
   const dir = voteDirs[p.id] || 0;
   el.innerHTML = `
     <div class="post-top">
-      <span class="post-dept">${deptLabel(p.dept)}</span>
+      <div class="post-top-left">
+        <span class="post-dept">${deptLabel(p.dept)}</span>
+        <span class="post-author"><b>${p.author}</b></span>
+      </div>
       <span class="post-time">${timeAgo(p.ts)}</span>
     </div>
     <div class="post-body"></div>
     <div class="post-bottom">
-      <div class="post-author"><b>${p.author}</b></div>
       <div class="actions">
         ${p.pinned ? '<span class="pin-badge">PINNED</span>' : ''}
         <button class="pin-btn" data-reply="${p.id}">💬 ${p.replyCount||0}</button>
