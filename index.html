@@ -102,15 +102,14 @@
   .archive-toggle{cursor:pointer; transition:color .15s;}
   .archive-toggle:hover{color:var(--ink);}
   .post{
-    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    background:var(--panel); border:1px solid var(--line); border-left-width:3px; border-radius:10px;
     padding:14px 14px 12px; margin-bottom:10px; position:relative;
   }
   .post.pinned{border-color:var(--pin); background:#1c1a10;}
   .post-top{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;}
   .post-dept{
     font-family:'DM Mono'; font-size:9.5px; text-transform:uppercase; letter-spacing:0.08em;
-    color:var(--accent); background:#1c1610; border:1px solid var(--accent-dim);
-    padding:3px 8px; border-radius:4px;
+    background:#1a1a1f; border:1px solid; padding:3px 8px; border-radius:4px;
   }
   .post-time{font-family:'DM Mono'; font-size:9.5px; color:var(--ink-dim);}
   .post-body{font-size:13.5px; line-height:1.5; color:var(--ink); margin-bottom:10px; white-space:pre-wrap;}
@@ -506,6 +505,7 @@ function render(){
 function postCard(p){
   const el = document.createElement('div');
   el.className = 'post' + (p.pinned?' pinned':'');
+  el.style.borderLeftColor = DEPT_COLORS[p.dept] || 'var(--line)';
   const dir = voteDirs[p.id] || 0;
   el.innerHTML = `
     <div class="post-top">
@@ -526,6 +526,10 @@ function postCard(p){
       </div>
     </div>
   `;
+  const deptColor = DEPT_COLORS[p.dept] || 'var(--accent)';
+  const deptBadge = el.querySelector('.post-dept');
+  deptBadge.style.color = deptColor;
+  deptBadge.style.borderColor = deptColor;
   el.querySelector('.post-body').textContent = p.text;
   el.querySelector('[data-vote-up]').onclick = () => {
     if(!me){ requireIdentity(() => castVote(p.id, 1)); return; }
