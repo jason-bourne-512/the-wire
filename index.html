@@ -216,6 +216,7 @@
         <div class="hdr-meta" id="dateLine"></div>
       </div>
       <div style="display:flex; align-items:center; gap:6px;">
+        <button class="refresh-btn" id="backBtn" title="Back to start">←</button>
         <button class="refresh-btn" id="muteBtn" title="Mute new-post alerts">🔊</button>
         <button class="refresh-btn" id="refreshBtn" title="Refresh">↻</button>
         <div class="who-chip" id="whoChip"></div>
@@ -655,6 +656,24 @@ function enterApp(){
   watchPosts();
 }
 
+function goToSplash(){
+  if(unsubscribePosts){ unsubscribePosts(); unsubscribePosts = null; }
+  if(currentReplyUnsub){ currentReplyUnsub(); currentReplyUnsub = null; }
+  $('#composer-modal').classList.remove('open');
+  $('#identify-modal').classList.remove('open');
+  $('#reply-modal').classList.remove('open');
+
+  me = null; selectedDept = null; afterIdentify = null; currentReplyPostId = null;
+  activeFilter = 'all'; posts = []; voteDirs = {}; knownPostIds = null; archiveExpanded = false;
+
+  $('#nameInput').value = '';
+  document.querySelectorAll('#deptGrid .dept-btn').forEach(x=>x.classList.remove('selected'));
+  $('#enterBtn').disabled = true;
+
+  $('#app').style.display = 'none';
+  $('#login').style.display = 'flex';
+}
+
 $('#enterBtn').addEventListener('click', async () => {
   me = { name: $('#nameInput').value.trim(), dept: selectedDept };
   await loadVotes();
@@ -687,6 +706,7 @@ $('#idContinue').addEventListener('click', async () => {
 });
 
 $('#refreshBtn').onclick = manualRefresh;
+$('#backBtn').onclick = goToSplash;
 
 function updateMuteBtn(){
   $('#muteBtn').textContent = muted ? '🔇' : '🔊';
