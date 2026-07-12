@@ -60,13 +60,12 @@
   .enter-btn:disabled{background:var(--panel-raised); color:var(--ink-dim); cursor:not-allowed;}
   .browse-circle-wrap{display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:20px;}
   .browse-circle{
-    width:54px; height:54px; border-radius:50%; background:var(--panel); border:1px solid var(--line);
-    color:var(--ink-dim); font-size:19px; cursor:pointer; display:flex; align-items:center; justify-content:center;
-    transition:border-color .15s, color .15s;
+    width:22px; height:22px; border-radius:50%; background:var(--accent); border:none;
+    cursor:pointer; transition:opacity .15s; padding:0;
   }
-  .browse-circle:hover{border-color:var(--accent); color:var(--accent);}
+  .browse-circle:hover{opacity:0.8;}
   .browse-circle-label{
-    font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.12em; color:var(--ink-dim); text-transform:uppercase;
+    font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.12em; color:var(--ink); text-transform:uppercase;
   }
   header{
     position:sticky; top:0; z-index:10; background:rgba(9,9,12,0.92); backdrop-filter:blur(8px);
@@ -204,7 +203,7 @@
   <button class="enter-btn" id="enterBtn" disabled>ONTO THE FLOOR →</button>
 
   <div class="browse-circle-wrap">
-    <button class="browse-circle" id="browseBtn" title="Just browse" aria-label="Just browse">→</button>
+    <button class="browse-circle" id="browseBtn" title="Just browse" aria-label="Just browse"></button>
     <div class="browse-circle-label">Just browse</div>
   </div>
 </div>
