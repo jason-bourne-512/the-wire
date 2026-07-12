@@ -613,11 +613,24 @@ async function submitReply(){
   if(!text || !currentReplyPostId) return;
   const postId = currentReplyPostId;
   $('#replyText').value = '';
+
+  // show it immediately rather than waiting on the Firestore round-trip —
+  // the live listener will true this up (and dedupe) once the server confirms
+  const emptyMsg = $('#replyList').querySelector('.reply-empty');
+  if(emptyMsg) emptyMsg.remove();
+  const item = document.createElement('div');
+  item.className = 'reply-item';
+  item.innerHTML = `<div class="reply-author"><b>${me.name}</b> · ${deptLabel(me.dept)}</div><div class="reply-text"></div>`;
+  item.querySelector('.reply-text').textContent = text;
+  $('#replyList').appendChild(item);
+  $('#replyList').scrollTop = $('#replyList').scrollHeight;
+
   try{
     await addDoc(collection(db, 'posts', postId, 'replies'), {
       text, author: me.name, authorDept: me.dept, ts: Date.now()
     });
     await updateDoc(doc(db, 'posts', postId), { replyCount: increment(1) });
+    toast('Reply sent');
   }catch(e){
     toast('Could not send reply — check connection');
   }
