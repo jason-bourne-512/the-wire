@@ -604,7 +604,7 @@ function postCard(p){
     if(!me){ requireIdentity(() => castVote(p.id, -1)); return; }
     castVote(p.id, -1);
   };
-  if(!p.pinned) attachLongPressPin(el.querySelector('.post-body'), p.id);
+  attachLongPressPin(el.querySelector('.post-body'), p.id, p.pinned);
   el.querySelector('[data-reply]').onclick = () => openReplies(p);
   return el;
 }
@@ -629,27 +629,29 @@ async function castVote(id, direction){
   }
 }
 
-function requestPin(id){
-  const pin = prompt('Manager PIN to pin this post:');
+function requestPinToggle(id, isPinned){
+  const action = isPinned ? 'unpin' : 'pin';
+  const pin = prompt(`Manager PIN to ${action} this post:`);
   if(pin === null) return;
   if(pin !== MANAGER_PIN){ toast('Wrong PIN'); return; }
-  updateDoc(doc(db, 'posts', id), { pinned: true })
-    .then(()=>toast('Pinned to top'))
-    .catch(()=>toast('Could not pin — check connection'));
+  updateDoc(doc(db, 'posts', id), { pinned: !isPinned })
+    .then(()=>toast(isPinned ? 'Unpinned' : 'Pinned to top'))
+    .catch(()=>toast(`Could not ${action} — check connection`));
 }
 
 const LONG_PRESS_MS = 1500;
 
-// Hold a post's text down for 1.5s to reveal the PIN prompt — no visible
-// pin control, so nobody else knows the option exists.
-function attachLongPressPin(target, postId){
+// Hold a post's text down for 1.5s to reveal the PIN prompt — toggles pin
+// or unpin depending on current state. No visible pin control, so nobody
+// else knows the option exists.
+function attachLongPressPin(target, postId, isPinned){
   let timer = null;
   const start = () => {
     target.classList.add('pressing');
     timer = setTimeout(() => {
       target.classList.remove('pressing');
       timer = null;
-      requestPin(postId);
+      requestPinToggle(postId, isPinned);
     }, LONG_PRESS_MS);
   };
   const cancel = () => {
