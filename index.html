@@ -101,13 +101,20 @@
     font-family:'DM Mono'; font-size:10px; text-transform:uppercase; letter-spacing:0.16em;
     color:var(--accent); margin-bottom:8px;
   }
-  .flow-title{font-family:'Bebas Neue'; font-size:22px; color:var(--ink); letter-spacing:0.02em; margin-bottom:8px;}
-  .flow-body{font-size:13px; line-height:1.6; color:var(--ink-dim); margin-bottom:12px;}
+  .flow-title{font-family:'Bebas Neue'; font-size:22px; color:var(--ink); letter-spacing:0.02em; margin-bottom:2px;}
+  .flow-title-es{font-family:'Bebas Neue'; font-size:15px; color:var(--ink-dim); letter-spacing:0.02em; font-style:italic; margin-bottom:8px;}
+  .flow-body{font-size:13px; line-height:1.6; color:var(--ink-dim); margin-bottom:6px;}
+  .flow-body-es{font-size:12px; line-height:1.6; color:var(--ink-dim); font-style:italic; opacity:0.82; margin-bottom:12px;}
   .flow-tip{
     font-family:'DM Mono'; font-size:10.5px; letter-spacing:0.03em; line-height:1.6; color:var(--ink);
     border-top:1px solid var(--line); padding-top:10px;
   }
   .flow-tip b{color:var(--accent);}
+  .flow-tip-es{
+    font-family:'DM Mono'; font-size:10px; letter-spacing:0.03em; line-height:1.6; color:var(--ink-dim);
+    font-style:italic; margin-top:6px;
+  }
+  .flow-tip-es b{color:var(--accent); opacity:0.85;}
   .filter-row::-webkit-scrollbar{display:none;}
   .chip{
     flex:0 0 auto; font-family:'DM Mono'; font-size:10.5px; padding:7px 12px; border-radius:20px;
@@ -220,6 +227,14 @@
     z-index:50; opacity:0; transition:opacity .2s; pointer-events:none;
   }
   .toast.show{opacity:1;}
+  .lang-toggle{display:flex; gap:0; margin-bottom:20px; border:1px solid var(--line); border-radius:6px; overflow:hidden; width:fit-content;}
+  .lang-btn{
+    background:var(--panel); border:none; color:var(--ink-dim); padding:7px 14px;
+    font-family:'DM Mono',monospace; font-size:11px; font-weight:700; letter-spacing:0.06em;
+    cursor:pointer; transition:background .15s,color .15s;
+  }
+  .lang-btn+.lang-btn{border-left:1px solid var(--line);}
+  .lang-btn.active{background:var(--accent-dim); color:var(--accent);}
 </style>
 </head>
 <body>
@@ -227,19 +242,24 @@
 <div id="login" class="page-wrap">
   <div class="login-mark">AUSDW STAFF</div>
   <h1 class="login-title">THE WIRE</h1>
-  <div class="login-sub">Stay connected across every department.</div>
+  <div class="login-sub" data-en="Stay connected across every department." data-es="Mantente conectado en todos los departamentos.">Stay connected across every department.</div>
 
-  <label class="field-label">Enter first name</label>
-  <input type="text" id="nameInput" placeholder="e.g. Kim" maxlength="20">
+  <div class="lang-toggle">
+    <button class="lang-btn active" id="loginLangEn" type="button">EN</button>
+    <button class="lang-btn" id="loginLangEs" type="button">ES</button>
+  </div>
 
-  <label class="field-label">Select department</label>
+  <label class="field-label" data-en="Enter first name" data-es="Ingresa tu nombre">Enter first name</label>
+  <input type="text" id="nameInput" data-en-ph="e.g. Kim" data-es-ph="ej. Kim" placeholder="e.g. Kim" maxlength="20">
+
+  <label class="field-label" data-en="Select department" data-es="Selecciona tu departamento">Select department</label>
   <div class="dept-grid" id="deptGrid"></div>
 
-  <button class="enter-btn" id="enterBtn" disabled>ONTO THE FLOOR →</button>
+  <button class="enter-btn" id="enterBtn" disabled data-en="ONTO THE FLOOR →" data-es="A TRABAJAR →">ONTO THE FLOOR →</button>
 
   <div class="browse-circle-wrap">
     <button class="browse-circle" id="browseBtn" title="Just browse" aria-label="Just browse"></button>
-    <div class="browse-circle-label">Just browse</div>
+    <div class="browse-circle-label" data-en="Just browse" data-es="Solo mirar">Just browse</div>
   </div>
 </div>
 
@@ -262,8 +282,11 @@
   <div class="flow-card">
     <div class="flow-label">✦ Why The Wire</div>
     <div class="flow-title">Culture Is Built, Not Announced</div>
+    <div class="flow-title-es">La Cultura Se Construye, No Se Anuncia</div>
     <div class="flow-body">Culture doesn't come from a memo — it comes from what gets said out loud, in public, between departments that otherwise never talk. Sociologist Mark Granovetter found that our strongest ties, the people on our own team, mostly circulate information we already have. It's the weak ties, the loose connections between groups, that carry something new: a fix nobody else thought of, a thank-you that reaches someone outside your section, a heads-up that saves the next shift. A bulletin board works because it manufactures those weak ties on purpose. Nobody owns it. Everybody can read it. That's the whole design.</div>
+    <div class="flow-body-es">La cultura no viene de un memorándum — viene de lo que se dice en voz alta, en público, entre departamentos que de otro modo nunca hablarían. El sociólogo Mark Granovetter descubrió que nuestros lazos más fuertes, la gente de nuestro propio equipo, casi siempre hacen circular información que ya teníamos. Son los lazos débiles, las conexiones sueltas entre grupos, los que traen algo nuevo: una solución que nadie más pensó, un agradecimiento que llega a alguien fuera de tu sección, un aviso que salva al siguiente turno. Un tablón de anuncios funciona porque fabrica esos lazos débiles a propósito. Nadie es dueño de él. Todos pueden leerlo. Ese es todo el diseño.</div>
     <div class="flow-tip"><b>TODAY'S PRACTICE —</b> Post something a coworker outside your department would actually want to read. That's how a board like this builds culture instead of just noise.</div>
+    <div class="flow-tip-es"><b>LA PRÁCTICA DE HOY —</b> Publica algo que un compañero de otro departamento realmente querría leer. Así es como un tablón como este construye cultura en lugar de solo ruido.</div>
   </div>
 
   <main id="feed"></main>
@@ -349,16 +372,16 @@ const db = getFirestore(fbApp);
 const postsCol = collection(db, 'posts');
 
 const DEPARTMENTS = [
-  {id:'banquets', label:'Banquets', emoji:'🍽️'},
-  {id:'restaurant', label:'Restaurant', emoji:'🍴'},
-  {id:'housekeeping', label:'Housekeeping', emoji:'🧺'},
-  {id:'frontdesk', label:'Front Desk', emoji:'🛎️'},
-  {id:'kitchen', label:'Kitchen', emoji:'🐔'},
-  {id:'engineering', label:'Engineering', emoji:'🔧'},
-  {id:'sales', label:'Sales & Events', emoji:'📋'},
-  {id:'valet', label:'Valet', emoji:'🚗'},
-  {id:'all', label:'General / All', emoji:'🏨'},
-  {id:'suggestions', label:'Suggestions & Ideas', emoji:'💡'},
+  {id:'banquets', label:'Banquets', label_es:'Banquetes', emoji:'🍽️'},
+  {id:'restaurant', label:'Restaurant', label_es:'Restaurante', emoji:'🍴'},
+  {id:'housekeeping', label:'Housekeeping', label_es:'Ama de Llaves', emoji:'🧺'},
+  {id:'frontdesk', label:'Front Desk', label_es:'Recepción', emoji:'🛎️'},
+  {id:'kitchen', label:'Kitchen', label_es:'Cocina', emoji:'🐔'},
+  {id:'engineering', label:'Engineering', label_es:'Mantenimiento', emoji:'🔧'},
+  {id:'sales', label:'Sales & Events', label_es:'Ventas y Eventos', emoji:'📋'},
+  {id:'valet', label:'Valet', label_es:'Valet', emoji:'🚗'},
+  {id:'all', label:'General / All', label_es:'General / Todos', emoji:'🏨'},
+  {id:'suggestions', label:'Suggestions & Ideas', label_es:'Sugerencias e Ideas', emoji:'💡'},
 ];
 const DEPT_COLORS = {
   banquets: '#ff8a3d',
@@ -397,13 +420,24 @@ function buildDeptGrid(container, onSelect){
     b.className = 'dept-btn'; b.type='button';
     b.style.borderLeftColor = DEPT_COLORS[d.id];
     b.style.borderLeftWidth = '3px';
-    b.innerHTML = `<span class="emoji">${d.emoji}</span>${d.label}`;
+    b.innerHTML = `<span class="emoji">${d.emoji}</span><span class="dept-btn-label" data-en="${d.label}" data-es="${d.label_es||d.label}">${d.label}</span>`;
     b.onclick = () => {
       container.querySelectorAll('.dept-btn').forEach(x=>x.classList.remove('selected'));
       b.classList.add('selected');
       onSelect(d.id);
     };
     container.appendChild(b);
+  });
+}
+
+// Applies the given language to every [data-en]/[data-es] text node and
+// [data-en-ph]/[data-es-ph] placeholder inside root.
+function applyLangIn(root, lang){
+  root.querySelectorAll('[data-en]').forEach(el => {
+    el.textContent = lang === 'es' ? (el.dataset.es || el.dataset.en) : el.dataset.en;
+  });
+  root.querySelectorAll('[data-en-ph]').forEach(el => {
+    el.placeholder = lang === 'es' ? (el.dataset.esPh || el.dataset.enPh) : el.dataset.enPh;
   });
 }
 
@@ -739,6 +773,17 @@ deptGridInit();
 idDeptGridInit();
 $('#nameInput').addEventListener('input', checkEnter);
 $('#idName').addEventListener('input', checkIdContinue);
+
+$('#loginLangEn').onclick = () => {
+  $('#loginLangEn').classList.add('active');
+  $('#loginLangEs').classList.remove('active');
+  applyLangIn($('#login'), 'en');
+};
+$('#loginLangEs').onclick = () => {
+  $('#loginLangEs').classList.add('active');
+  $('#loginLangEn').classList.remove('active');
+  applyLangIn($('#login'), 'es');
+};
 
 function enterApp(){
   $('#login').style.display = 'none';
