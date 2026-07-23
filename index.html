@@ -171,7 +171,14 @@
   }
   .fab-plus{font-family:'Bebas Neue'; font-size:24px; line-height:1;}
   .fab-label{font-family:'DM Mono',monospace; font-size:8.5px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-top:2px; color:#000;}
-  #composer-modal, #identify-modal, #reply-modal{
+  .fab-suggest{
+    position:fixed; bottom:28px; left:20px; z-index:20;
+    width:48px; height:48px; border-radius:50%;
+    background:#2c2440; color:#c9b8f0; border:1px solid rgba(157,124,240,0.4);
+    display:flex; align-items:center; justify-content:center; font-size:20px;
+    box-shadow:0 6px 16px rgba(0,0,0,0.4); cursor:pointer;
+  }
+  #composer-modal, #identify-modal, #reply-modal, #suggestion-modal{
     position:fixed; inset:0; z-index:30; background:rgba(0,0,0,0.6); display:none;
     align-items:flex-end; justify-content:center;
   }
@@ -253,13 +260,15 @@
   </header>
 
   <div class="flow-card">
-    <div class="flow-label">✦ Daily Flow</div>
-    <div class="flow-title">Finding Flow on the Floor</div>
-    <div class="flow-body">Flow is the state psychologist Mihaly Csikszentmihalyi found across athletes, artists, and surgeons alike — full immersion, sharp focus, no sense of time passing. It shows up on the floor too: the moment a captain running a 300-cover turn goes quiet and locked-in, moving faster with less effort than someone standing idle at an empty station. Three things bring it on — a clear goal, feedback in real time, and a task that stretches your skill without overwhelming it.</div>
-    <div class="flow-tip"><b>TODAY'S PRACTICE —</b> Pick one task this shift and give it your full attention. No phone, no multitasking. Notice what changes.</div>
+    <div class="flow-label">✦ Why The Wire</div>
+    <div class="flow-title">Culture Is Built, Not Announced</div>
+    <div class="flow-body">Culture doesn't come from a memo — it comes from what gets said out loud, in public, between departments that otherwise never talk. Sociologist Mark Granovetter found that our strongest ties, the people on our own team, mostly circulate information we already have. It's the weak ties, the loose connections between groups, that carry something new: a fix nobody else thought of, a thank-you that reaches someone outside your section, a heads-up that saves the next shift. A bulletin board works because it manufactures those weak ties on purpose. Nobody owns it. Everybody can read it. That's the whole design.</div>
+    <div class="flow-tip"><b>TODAY'S PRACTICE —</b> Post something a coworker outside your department would actually want to read. That's how a board like this builds culture instead of just noise.</div>
   </div>
 
   <main id="feed"></main>
+
+  <button class="fab-suggest" id="openSuggestion" title="Anonymous suggestion" aria-label="Anonymous suggestion">💡</button>
 
   <button class="fab" id="openComposer">
     <span class="fab-plus">+</span>
@@ -275,6 +284,18 @@
     <div class="sheet-row">
       <button class="sheet-btn cancel" id="cancelPost">CANCEL</button>
       <button class="sheet-btn post" id="submitPost">POST</button>
+    </div>
+  </div>
+</div>
+
+<div id="suggestion-modal">
+  <div class="sheet">
+    <h2 class="sheet-title">💡 Anonymous suggestion</h2>
+    <div class="pin-note">No name or department attached — nobody will know it was you.</div>
+    <textarea id="suggestionText" placeholder="Got an idea, a fix, or something on your mind? Say it here." maxlength="500"></textarea>
+    <div class="sheet-row">
+      <button class="sheet-btn cancel" id="cancelSuggestion">CANCEL</button>
+      <button class="sheet-btn post" id="submitSuggestion">SEND ANONYMOUSLY</button>
     </div>
   </div>
 </div>
@@ -337,6 +358,7 @@ const DEPARTMENTS = [
   {id:'sales', label:'Sales & Events', emoji:'📋'},
   {id:'valet', label:'Valet', emoji:'🚗'},
   {id:'all', label:'General / All', emoji:'🏨'},
+  {id:'suggestions', label:'Suggestions & Ideas', emoji:'💡'},
 ];
 const DEPT_COLORS = {
   banquets: '#ff8a3d',
@@ -347,6 +369,7 @@ const DEPT_COLORS = {
   engineering: '#6c93c9',
   sales: '#b98cd6',
   valet: '#a8455e',
+  suggestions: '#9d7cf0',
 };
 const MANAGER_PIN = '1919'; // soft speed bump only — not real access control
 
@@ -369,7 +392,7 @@ function toast(msg){
 }
 
 function buildDeptGrid(container, onSelect){
-  DEPARTMENTS.filter(d=>d.id!=='all').forEach(d=>{
+  DEPARTMENTS.filter(d=>d.id!=='all' && d.id!=='suggestions').forEach(d=>{
     const b = document.createElement('button');
     b.className = 'dept-btn'; b.type='button';
     b.style.borderLeftColor = DEPT_COLORS[d.id];
@@ -803,6 +826,27 @@ $('#submitPost').onclick = async () => {
     toast('Posted to the Wire');
   }catch(e){
     toast('Could not post — check connection');
+  }
+};
+
+$('#openSuggestion').onclick = () => {
+  $('#suggestion-modal').classList.add('open'); $('#suggestionText').focus();
+};
+$('#cancelSuggestion').onclick = () => { $('#suggestion-modal').classList.remove('open'); $('#suggestionText').value=''; };
+$('#submitSuggestion').onclick = async () => {
+  const text = $('#suggestionText').value.trim();
+  if(!text) return;
+  const post = {
+    text, dept: 'suggestions', author: 'Anonymous', authorDept: null,
+    ts: Date.now(), votes: 0, pinned: false, anonymous: true
+  };
+  $('#suggestion-modal').classList.remove('open');
+  $('#suggestionText').value = '';
+  try{
+    await addDoc(postsCol, post);
+    toast('Suggestion sent anonymously');
+  }catch(e){
+    toast('Could not send — check connection');
   }
 };
 
